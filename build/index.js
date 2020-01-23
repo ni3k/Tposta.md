@@ -158,7 +158,7 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.addOrUpdateData = exports.getTrackInfo = void 0;
+exports.saveData = exports.deleteData = exports.addOrUpdateData = exports.getTrackInfo = void 0;
 
 var cheerio = _interopRequireWildcard(require("cheerio"));
 
@@ -197,7 +197,7 @@ const addOrUpdateData = async ({
   userId,
   trackingNumber
 }) => {
-  await _tracks.default.updateOne({
+  return _tracks.default.updateOne({
     userId,
     trackingNumber
   }, {
@@ -211,17 +211,166 @@ const addOrUpdateData = async ({
 };
 
 exports.addOrUpdateData = addOrUpdateData;
-},{"../../db/models/tracks":"db/models/tracks.js"}],"index.js":[function(require,module,exports) {
+
+const deleteData = async ({
+  userId,
+  trackingNumber
+}) => {
+  return _tracks.default.deleteOne({
+    userId,
+    trackingNumber
+  });
+};
+
+exports.deleteData = deleteData;
+
+const saveData = async ({
+  userId,
+  trackingNumber
+}) => {
+  const data = await getTrackInfo(trackingNumber);
+
+  try {
+    await addOrUpdateData({
+      data,
+      userId,
+      trackingNumber
+    });
+    return {
+      data,
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error
+    };
+  }
+};
+
+exports.saveData = saveData;
+},{"../../db/models/tracks":"db/models/tracks.js"}],"src/tgBot/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _nodeTelegramBotApi = _interopRequireDefault(require("node-telegram-bot-api"));
+
+var _handleData = require("../handleData");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const bot = {};
+const TEST_MODE = process.env.TEST;
+
+bot.init = function () {
+  const tgBot = new _nodeTelegramBotApi.default(process.env.TG_BOT, {
+    polling: true
+  });
+  tgBot.onText(/\/start/, ({
+    chat: {
+      id
+    }
+  }) => {
+    tgBot.sendMessage(id, '/start -> shows list of commands');
+    tgBot.sendMessage(id, '/track -> followed by tracking number (/track RP*****12)');
+    tgBot.sendMessage(id, '/untrack -> followed by tracking number (/untrack RP****32)');
+  });
+  tgBot.onText(/\/track (.+)/, async ({
+    chat
+  }, match) => {
+    const trackingNumber = match[1];
+    const rsp = await (0, _handleData.saveData)({
+      trackingNumber,
+      userId: chat.id
+    });
+
+    if (rsp.error) {
+      tgBot.sendMessage(chat.id, JSON.stringify(rsp.error));
+    } else {
+      tgBot.sendMessage(chat.id, `Started tracking ${trackingNumber}, will stop if there are no updates in 2 weeks`);
+
+      if (!rsp.data) {
+        tgBot.sendMessage(chat.id, "There is no registered data rn for this tracking number");
+        return;
+      }
+
+      const {
+        event,
+        date
+      } = rsp.data.slice(-1)[0];
+      tgBot.sendMessage(chat.id, `Last event: ${event} registered on ${date}`);
+      if (TEST_MODE) tgBot.sendMessage(chat.id, JSON.stringify(rsp.data));
+    }
+  });
+  tgBot.on('message', msg => {
+    const chatId = msg.chat.id; // console.log(msg);
+    // console.log('recieved message');
+    // send a message to the chat acknowledging receipt of their message
+
+    tgBot.sendMessage(chatId, 'Received your message');
+  });
+};
+
+var _default = bot;
+exports.default = _default;
+},{"../handleData":"src/handleData/index.js"}],"db/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _mongoose = _interopRequireDefault(require("mongoose"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const server = '127.0.0.1:27017';
+const database = 'PTMD';
+
+class Database {
+  constructor() {
+    this._connect();
+  }
+
+  _connect() {
+    _mongoose.default.connect(`mongodb://${server}/${database}`).then(() => {
+      console.log('Database connection successful');
+    }).catch(err => {
+      console.error('Database connection error');
+    });
+  }
+
+}
+
+var _default = new Database();
+
+exports.default = _default;
+},{}],"index.js":[function(require,module,exports) {
 "use strict";
 
 var _handleData = require("./src/handleData");
 
+var _tgBot = _interopRequireDefault(require("./src/tgBot"));
+
+var _db = _interopRequireDefault(require("./db"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// initialize mongoose
+// init process vars
+require('dotenv').config();
+
 (async () => {
   // const data = await getTrackInfo('RG910688822BE')
-  console.log(data); // addOrUpdateData({ userId: 1, trackingNumber: 'RG910688822BE', data })
-  // lastEntries();
-
-  console.log('da');
+  // console.log(data);
+  // const rs = await deleteData({ userId: 2, trackingNumber: 'RG910688822BE' });
+  // console.log(rs);
+  _tgBot.default.init();
 })();
-},{"./src/handleData":"src/handleData/index.js"}]},{},["index.js"], null)
+},{"./src/handleData":"src/handleData/index.js","./src/tgBot":"src/tgBot/index.js","./db":"db/index.js"}]},{},["index.js"], null)
 //# sourceMappingURL=/index.js.map

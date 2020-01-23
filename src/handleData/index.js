@@ -25,6 +25,19 @@ export const getTrackInfo = async trackNumber => {
 }
 
 export const addOrUpdateData = async ({ data, userId, trackingNumber }) => {
-  await Track.updateOne({ userId, trackingNumber }, { trackingNumber, userId, trackInfo: JSON.stringify(data) }, { upsert: true, setDefaultsOnInsert: true})
+  return Track.updateOne({ userId, trackingNumber }, { trackingNumber, userId, trackInfo: JSON.stringify(data) }, { upsert: true, setDefaultsOnInsert: true})
 }
 
+export const deleteData = async ({ userId, trackingNumber }) => {
+  return Track.deleteOne({ userId, trackingNumber });
+}
+
+export const saveData = async ({ userId, trackingNumber }) => {
+  const data = await getTrackInfo(trackingNumber);
+  try {
+    await addOrUpdateData({ data, userId, trackingNumber });
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error }
+  }
+}
