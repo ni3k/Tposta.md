@@ -1,12 +1,12 @@
 
 import { getTrackInfo, addOrUpdateData, lastEntries } from './src/handleData';
-import { createTable } from './db/create';
+
 
 (async () => {
-    // createTable();
-    const data = await getTrackInfo('RP877761813CN')
+    // const data = await getTrackInfo('RG910688822BE')
+   
     console.log(data);
-    addOrUpdateData({ userId: 1, trackingNumber: 'RP877761813CN', data })
+    // addOrUpdateData({ userId: 1, trackingNumber: 'RG910688822BE', data })
     // lastEntries();
     console.log('da')
 

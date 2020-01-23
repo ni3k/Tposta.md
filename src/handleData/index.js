@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio"
 import Axios from "axios"
-import DB from "../../db"
+import Track from '../../db/models/tracks';
 
 export const getTrackInfo = async trackNumber => {
   const { data } = await Axios.get(
@@ -25,15 +25,6 @@ export const getTrackInfo = async trackNumber => {
 }
 
 export const addOrUpdateData = async ({ data, userId, trackingNumber }) => {
-  const sql = `CASE EXISTS ( select * from TRACKS )`
-  console.log(sql)
-  DB.run(sql, err => {
-    console.log(err)
-  })
+  await Track.updateOne({ userId, trackingNumber }, { trackingNumber, userId, trackInfo: JSON.stringify(data) }, { upsert: true, setDefaultsOnInsert: true})
 }
 
-export const lastEntries = async () => {
-  DB.all("select * from TRACKS where user_id='1' AND trackingNumber='RP877761813CN'", [], (err, rows) => {
-    console.log(rows)
-  })
-}
