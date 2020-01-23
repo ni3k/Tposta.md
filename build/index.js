@@ -117,7 +117,7 @@ parcelRequire = (function (modules, cache, entry, globalName) {
   }
 
   return newRequire;
-})({"db/index.js":[function(require,module,exports) {
+})({"db/schemas/tracks.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -125,34 +125,46 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _sqlite = _interopRequireDefault(require("sqlite3"));
+var _mongoose = require("mongoose");
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const dbConn = _sqlite.default.verbose();
-
-const dbConnection = new dbConn.Database('./data.db', err => {
-  if (err) {
-    console.log(err.message);
-  }
-
-  console.log('Connected');
+const Tracks = new _mongoose.Schema({
+  userId: Number,
+  trackingNumber: String,
+  trackInfo: String
 });
-var _default = dbConnection;
+var _default = Tracks;
 exports.default = _default;
-},{}],"src/handleData/index.js":[function(require,module,exports) {
+},{}],"db/models/tracks.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.lastEntries = exports.addOrUpdateData = exports.getTrackInfo = void 0;
+exports.default = void 0;
+
+var _tracks = _interopRequireDefault(require("../schemas/tracks"));
+
+var _mongoose = _interopRequireDefault(require("mongoose"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const Track = _mongoose.default.model('Track', _tracks.default);
+
+var _default = Track;
+exports.default = _default;
+},{"../schemas/tracks":"db/schemas/tracks.js"}],"src/handleData/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.addOrUpdateData = exports.getTrackInfo = void 0;
 
 var cheerio = _interopRequireWildcard(require("cheerio"));
 
 var _axios = _interopRequireDefault(require("axios"));
 
-var _db = _interopRequireDefault(require("../../db"));
+var _tracks = _interopRequireDefault(require("../../db/models/tracks"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -185,62 +197,31 @@ const addOrUpdateData = async ({
   userId,
   trackingNumber
 }) => {
-  const sql = `CASE EXISTS ( select * from TRACKS )`;
-  console.log(sql);
-
-  _db.default.run(sql, err => {
-    console.log(err);
+  await _tracks.default.updateOne({
+    userId,
+    trackingNumber
+  }, {
+    trackingNumber,
+    userId,
+    trackInfo: JSON.stringify(data)
+  }, {
+    upsert: true,
+    setDefaultsOnInsert: true
   });
 };
 
 exports.addOrUpdateData = addOrUpdateData;
-
-const lastEntries = async () => {
-  _db.default.all("select * from TRACKS where user_id='1' AND trackingNumber='RP877761813CN'", [], (err, rows) => {
-    console.log(rows);
-  });
-};
-
-exports.lastEntries = lastEntries;
-},{"../../db":"db/index.js"}],"db/create.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.createTable = void 0;
-
-var _index = _interopRequireDefault(require("./index"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const createTable = () => {
-  _index.default.run('CREATE TABLE TRACKS("user_id" INTEGER, trackingNumber varchar(256), "trackinfo" nvarchar(1000), "id" INTEGER PRIMARY KEY AUTOINCREMENT)', err => {
-    console.log(err);
-  });
-
-  _index.default.close();
-};
-
-exports.createTable = createTable;
-},{"./index":"db/index.js"}],"index.js":[function(require,module,exports) {
+},{"../../db/models/tracks":"db/models/tracks.js"}],"index.js":[function(require,module,exports) {
 "use strict";
 
 var _handleData = require("./src/handleData");
 
-var _create = require("./db/create");
-
 (async () => {
-  // createTable();
-  const data = await (0, _handleData.getTrackInfo)('RP877761813CN');
-  console.log(data);
-  (0, _handleData.addOrUpdateData)({
-    userId: 1,
-    trackingNumber: 'RP877761813CN',
-    data
-  }); // lastEntries();
+  // const data = await getTrackInfo('RG910688822BE')
+  console.log(data); // addOrUpdateData({ userId: 1, trackingNumber: 'RG910688822BE', data })
+  // lastEntries();
 
   console.log('da');
 })();
-},{"./src/handleData":"src/handleData/index.js","./db/create":"db/create.js"}]},{},["index.js"], null)
+},{"./src/handleData":"src/handleData/index.js"}]},{},["index.js"], null)
 //# sourceMappingURL=/index.js.map

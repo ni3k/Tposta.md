@@ -1,12 +1,22 @@
-import sqlite3 from 'sqlite3';
+import mongoose from 'mongoose';
+const server = '127.0.0.1:27017';
+const database = 'PTMD';
 
-const dbConn = sqlite3.verbose();
+class Database {
+  constructor() {
+    this._connect()
+  }
+  
+_connect() {
+     mongoose.connect(`mongodb://${server}/${database}`)
+       .then(() => {
+         console.log('Database connection successful')
+       })
+       .catch(err => {
+         console.error('Database connection error')
+       })
+  }
+}
 
-const dbConnection = new dbConn.Database('./data.db', (err) => {
-    if (err) {
-        console.log(err.message);
-    }
-    console.log('Connected');
-})
 
-export default dbConnection;
+export default (new Database());
