@@ -5,7 +5,6 @@ import { getTrackInfo } from '../handleData';
 const Daemon = {};
 
 
-
 Daemon.checkTracks = async () => {
   const allTracks = await Track.find({}, 'trackingNumber userId lastEvent');
   await Promise.all(allTracks.map(async ({ trackingNumber, userId, lastEvent }) => {
@@ -14,6 +13,7 @@ Daemon.checkTracks = async () => {
     if (lastEvent === dataLastEvent) {
       return null;
     }
+    Bot.sendMessage(userId, `New event registered for ${trackingNumber}: ${dataLastEvent}, \n see /getData {trackingNumber} to get last retrieved Data`);
     return Track.updateOne(
       { userId, trackingNumber },
       {
