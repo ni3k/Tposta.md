@@ -1,5 +1,5 @@
 import TGBot from 'node-telegram-bot-api';
-import { saveData } from '../handleData';
+import Track from '../../db/models/tracks';
 
 require('dotenv').config();
 
@@ -24,29 +24,35 @@ bot.init = function () {
     this.bulkSend(id, this.startMessages);
   });
 
-  this.onText(/\/track (.+)/, async ({ chat }, match) => {
+  this.onText(/\/getData (.+)/, async ({ chat: { id } }, match) => {
+    const trackingNumber = match[1];
+    const data = await Track.findOne({ trackingNumber, userId: id }, 'trackInfo');
+
+    if (data) {
+      const oneMessage = JSON.parse(data.trackInfo).map(({ date, event }) => `on date: ${date} with event: ${event},`).join('\n');
+
+      this.sendMessage(id, oneMessage);
+    } else {
+      this.sendMessage(id, 'No registered data for this tracking number for you');
+    }
+  });
+
+  this.onText(/\/track (.+)/, async ({ chat, from: { username } }, match) => {
     const trackingNumber = match[1];
 
-    const rsp = await saveData({ trackingNumber, userId: chat.id });
+    await Track.updateOne({ userId: chat.id, trackingNumber }, {
+      trackingNumber,
+      userId: chat.id,
+      username,
+      lastUpdated: new Date(),
+      trackInfo: null,
+      lastEvent: null,
+    },
+    {
+      upsert: true,
+    });
 
-    if (rsp.error) {
-      this.sendMessage(chat.id, JSON.stringify(rsp.error));
-    } else {
-      this.sendMessage(
-        chat.id,
-        `Started tracking ${trackingNumber}, will stop if there are no updates in 2 weeks`,
-      );
-      if (!rsp.data) {
-        this.sendMessage(
-          chat.id,
-          'There is no registered data rn for this tracking number',
-        );
-        return;
-      }
-      const { event, date } = rsp.data.slice(-1)[0];
-      this.sendMessage(chat.id, `Last event: ${event} registered on ${date}`);
-      if (TEST_MODE) this.sendMessage(chat.id, JSON.stringify(rsp.data));
-    }
+    this.sendMessage(chat.id, `Started tracking ${trackingNumber}, will stop if there are no updates in 2 weeks`);
   });
 
   if (TEST_MODE) {
