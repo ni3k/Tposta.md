@@ -1,3 +1,4 @@
+import cron from 'node-cron';
 import Bot from '../tgBot';
 import Track from '../../db/models/tracks';
 import { getTrackInfo } from '../handleData';
@@ -26,14 +27,14 @@ Daemon.checkTracks = async () => {
   }));
 };
 
-Daemon.checkPeriodically = async () => {
-  await Daemon.checkTracks();
-//   setInterval(async () => await Daemon.checkTracks, 10000);
+Daemon.checkPeriodically = () => {
+  cron.schedule('* * * * *', async () => {
+    await Daemon.checkTracks();
+  });
 };
 
 Daemon.init = function () {
-  Daemon.checkTracks();
-//   Bot.sendMessage(367250529, 'sent from daemon');
+  Daemon.checkPeriodically();
 };
 
 export default Daemon;
