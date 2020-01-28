@@ -22,6 +22,8 @@ bot.bulkSend = function (chatId, messages) {
 
 
 bot.init = function () {
+
+  // todo: second param extract from db/models;
   new BotController(bot, { Track });
 
   if (TEST_MODE) {
