@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 import mongoose from 'mongoose';
 

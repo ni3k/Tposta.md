@@ -24,6 +24,26 @@ bot.init = function () {
     this.bulkSend(id, this.startMessages);
   });
 
+  this.onText(/\/list/, async ({ chat: { id } }) => {
+    const list = await Track.find({ userId: id }, 'trackingNumber');
+
+    if (list) {
+      const oneMessage = list.map(({ trackingNumber }) => `You have registered: trackingNumber, to delete /delete_${trackingNumber}\n`).join('');
+      this.sendMessage(id, oneMessage);
+    } else {
+      this.sendMessage(id, 'You have no tracking numbers registered');
+    }
+  });
+
+  this.onText(/\/delete_(.+)/, async ({ chat: { id } }, [_, trackingNumber]) => {
+    const data = await Track.findOneAndDelete({ trackingNumber, userId: id });
+    if (data) {
+      this.sendMessage(id, `removed ${trackingNumber}`);
+    } else {
+      this.sendMessage(id, `not found ${trackingNumber}`);
+    }
+  });
+
   this.onText(/\/getData (.+)/, async ({ chat: { id } }, match) => {
     const trackingNumber = match[1];
     const data = await Track.findOne({ trackingNumber, userId: id }, 'trackInfo');
