@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import Bot from '../tgBot';
 import Track from '../../db/models/tracks';
-import { getTrackInfo } from '../handleData';
+import getTrackInfo from '../handleData';
 
 const Daemon = {};
 
